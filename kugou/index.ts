@@ -73,7 +73,7 @@ async function getLyric(musicItem: any) {
 export = {
   platform: "酷狗音乐",
   version: "1.0.0",
-  srcUrl: "",
+  srcUrl: "https://github.com/henyuer/myMusicfreePlugins/blob/master/dist/kugou/index.js",
   cacheControl: "no-store",
   supportedSearchType: ["lyric"],
   search,
