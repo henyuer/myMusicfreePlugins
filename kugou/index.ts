@@ -1,3 +1,4 @@
+declare var module: any;
 import axios from "axios";
 
 const HEADERS = {
@@ -5,25 +6,39 @@ const HEADERS = {
   "Referer": "https://www.kugou.com/",
 };
 
-// 纯 JS Base64 解码，不依赖 Node Buffer
+// 纯 JS Base64 解码，兼容 Node.js / Hermes
 function decodeBase64(str: string): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-  let output = "";
+  str = String(str).replace(/[^A-Za-z0-9+/=]/g, "");
+  const bytes: number[] = [];
   let i = 0;
-  str = str.replace(/[^A-Za-z0-9+/=]/g, "");
   while (i < str.length) {
-    const enc1 = chars.indexOf(str.charAt(i++));
-    const enc2 = chars.indexOf(str.charAt(i++));
-    const enc3 = chars.indexOf(str.charAt(i++));
-    const enc4 = chars.indexOf(str.charAt(i++));
-    const chr1 = (enc1 << 2) | (enc2 >> 4);
-    const chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
-    const chr3 = ((enc3 & 3) << 6) | enc4;
-    output += String.fromCharCode(chr1);
-    if (enc3 !== 64) output += String.fromCharCode(chr2);
-    if (enc4 !== 64) output += String.fromCharCode(chr3);
+    const e1 = chars.indexOf(str.charAt(i++));
+    const e2 = chars.indexOf(str.charAt(i++));
+    const e3 = chars.indexOf(str.charAt(i++));
+    const e4 = chars.indexOf(str.charAt(i++));
+    bytes.push((e1 << 2) | (e2 >> 4));
+    if (e3 !== 64) bytes.push(((e2 & 15) << 4) | (e3 >> 2));
+    if (e4 !== 64) bytes.push(((e3 & 3) << 6) | e4);
   }
-  return decodeURIComponent(escape(output));
+  // UTF-8 解码
+  let result = "";
+  i = 0;
+  while (i < bytes.length) {
+    const b = bytes[i++];
+    let codePoint: number;
+    if (b < 0x80) {
+      codePoint = b;
+    } else if ((b >> 5) === 0x06) {
+      codePoint = ((b & 0x1f) << 6) | (bytes[i++] & 0x3f);
+    } else if ((b >> 4) === 0x0e) {
+      codePoint = ((b & 0x0f) << 12) | ((bytes[i++] & 0x3f) << 6) | (bytes[i++] & 0x3f);
+    } else {
+      codePoint = ((b & 0x07) << 18) | ((bytes[i++] & 0x3f) << 12) | ((bytes[i++] & 0x3f) << 6) | (bytes[i++] & 0x3f);
+    }
+    result += String.fromCodePoint(codePoint);
+  }
+  return result;
 }
 
 async function search(query: string, page: number, type: string) {
@@ -70,10 +85,10 @@ async function getLyric(musicItem: any) {
   return { rawLrc: lrc };
 }
 
-export = {
+module.exports = {
   platform: "酷狗音乐",
   version: "1.0.0",
-  srcUrl: "https://github.com/henyuer/myMusicfreePlugins/blob/master/dist/kugou/index.js",
+  srcUrl: "https://gitee.com/henyuer/myMusicfreePlugins/raw/master/dist/kugou/index.js",
   cacheControl: "no-store",
   supportedSearchType: ["lyric"],
   search,
