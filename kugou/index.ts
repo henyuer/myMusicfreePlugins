@@ -5,7 +5,28 @@ const HEADERS = {
   "Referer": "https://www.kugou.com/",
 };
 
-async function search(query, page, type) {
+// 纯 JS Base64 解码，不依赖 Node Buffer
+function decodeBase64(str: string): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+  let output = "";
+  let i = 0;
+  str = str.replace(/[^A-Za-z0-9+/=]/g, "");
+  while (i < str.length) {
+    const enc1 = chars.indexOf(str.charAt(i++));
+    const enc2 = chars.indexOf(str.charAt(i++));
+    const enc3 = chars.indexOf(str.charAt(i++));
+    const enc4 = chars.indexOf(str.charAt(i++));
+    const chr1 = (enc1 << 2) | (enc2 >> 4);
+    const chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+    const chr3 = ((enc3 & 3) << 6) | enc4;
+    output += String.fromCharCode(chr1);
+    if (enc3 !== 64) output += String.fromCharCode(chr2);
+    if (enc4 !== 64) output += String.fromCharCode(chr3);
+  }
+  return decodeURIComponent(escape(output));
+}
+
+async function search(query: string, page: number, type: string) {
   if (type !== "lyric") {
     return { isEnd: true, data: [] };
   }
@@ -16,7 +37,7 @@ async function search(query, page, type) {
   })).data;
 
   const songs = res.data?.lists || [];
-  const data = songs.map((song) => ({
+  const data = songs.map((song: any) => ({
     title: song.FileName,
     id: song.FileHash,
     artist: song.SingerName,
@@ -28,7 +49,7 @@ async function search(query, page, type) {
   return { isEnd: true, data };
 }
 
-async function getLyric(musicItem) {
+async function getLyric(musicItem: any) {
   const lr = (await axios.get("https://lyrics.kugou.com/search", {
     params: { ver: 1, man: "yes", client: "pc", hash: musicItem.id, album_id: musicItem.albumId || "" },
     headers: HEADERS,
@@ -44,20 +65,15 @@ async function getLyric(musicItem) {
     headers: HEADERS,
   })).data;
 
-  let lrc = dl.content || "";
-  try {
-    lrc = Buffer.from(lrc, "base64").toString("utf-8");
-  } catch (_) {
-    // 非 Base64，原样返回
-  }
+  const lrc = decodeBase64(dl.content || "");
 
   return { rawLrc: lrc };
 }
 
-module.exports = {
+export = {
   platform: "酷狗音乐",
   version: "1.0.0",
-  srcUrl: "https://gitee.com/maotoumao/MusicFreePlugins/raw/v0.1/dist/kugou/index.js",
+  srcUrl: "",
   cacheControl: "no-store",
   supportedSearchType: ["lyric"],
   search,

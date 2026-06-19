@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "noImplicitAny": false,
+    "noEmitOnError": true,
+    "removeComments": true,
+    "allowJs": true,
+    "sourceMap": false,
+    "module": "CommonJS",
+    "target": "ES2017",
+    "outDir": "dist",
+    "rootDir": "./"
+  },
+  "include": ["./kugou/index.ts"]
+}
